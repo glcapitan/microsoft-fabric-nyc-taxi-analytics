@@ -1,4 +1,4 @@
-# 🚖 End-to-End NYC Taxi Data Engineering Platform using Microsoft Fabric
+# 🚖 Modern Data Engineering & Analytics Pipeline using Microsoft Fabric
 
 <p align="center">
 
