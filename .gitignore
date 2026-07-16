@@ -1,0 +1,15 @@
+# Large raw data — keep only small samples in sample-data/
+*.parquet
+*.csv
+!sample-data/*.csv
+
+# Power BI temp/cache files
+*.pbix.bak
+*.abf
+.pbi/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.tmp
+.vscode/
