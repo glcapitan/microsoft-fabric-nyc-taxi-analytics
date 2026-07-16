@@ -9,29 +9,21 @@
 
 ---
 
-## 📌 Business Scenario
+## Business Scenario
 
 A city transportation authority needs reliable, self-service analytics on taxi operations: revenue trends, vendor performance, payment behavior, and demand patterns across boroughs. Analysts were previously working from raw CSV extracts — slow, error-prone, and impossible to govern.
 
-**This platform solves that** by delivering a governed, automated pipeline that transforms millions of raw NYC Yellow Taxi trip records into an analytics-ready warehouse and an interactive Power BI dashboard — refreshed end-to-end through orchestrated Fabric pipelines.
+This project addresses that with a governed, automated pipeline: raw NYC Yellow Taxi trip records are ingested, cleansed, and landed in an analytics-ready warehouse that feeds an interactive Power BI report. The whole refresh runs through orchestrated Fabric pipelines.
 
-> ⚡ **TL;DR for reviewers:** Modular pipeline orchestration → Lakehouse (Bronze) → Dataflow Gen2 transformations (Silver) → SQL Warehouse (Gold) → Semantic Model → Power BI. Full medallion architecture, single Fabric workspace, zero external tooling.
+**At a glance:** orchestrated pipelines → Lakehouse (Bronze) → Dataflow Gen2 (Silver) → SQL Warehouse (Gold) → semantic model → Power BI. Medallion architecture, single Fabric workspace, no external tooling.
 
 ---
 
-## 🏗️ Solution Architecture
+## Solution Architecture
 
-```mermaid
-flowchart LR
-    A[NYC Yellow Taxi<br/>Trip Records] --> B[Fabric Data Pipelines<br/>Orchestrated Ingestion]
-    B --> C[(Lakehouse<br/>Bronze — Raw)]
-    C --> D[Dataflow Gen2<br/>Silver — Clean & Validate]
-    D --> E[(SQL Warehouse<br/>Gold — Analytics-Ready)]
-    E --> F[Semantic Model<br/>Relationships & Measures]
-    F --> G[Power BI Dashboard]
-```
+![Solution Architecture](assets/diagrams/solution-architecture.png)
 
-*(High-resolution architecture diagram: [`assets/diagrams/solution-architecture.png`](assets/diagrams/))*
+*End-to-end flow within Microsoft Fabric (OneLake): orchestrated pipelines ingest raw trip data into the Bronze Lakehouse, Dataflow Gen2 curates it through Silver, and the Gold SQL Warehouse feeds the `nyctaxi_yellow` semantic model behind the NYC Yellow Taxi Report.*
 
 ### Why this design?
 
@@ -39,18 +31,18 @@ flowchart LR
 |---|---|
 | **Modular child pipelines** | Single-responsibility pipelines are independently testable, reusable, and easier to debug than one monolith |
 | **Medallion architecture** | Clear contract between raw, cleaned, and business-ready data; supports reprocessing without re-ingestion |
-| **SQL Warehouse for Gold** | T-SQL analytics surface familiar to BI teams; supports dimensional modeling |
+| **SQL Warehouse for Gold** | T-SQL analytics surface familiar to BI teams; analytics-ready serving layer for the semantic model |
 | **Semantic Model layer** | Centralizes business logic (measures, relationships) so every report shares one source of truth |
 
 ---
 
-## 🔄 Pipeline Orchestration
+## Pipeline Orchestration
 
 Ingestion and processing is coordinated by a **master orchestration pipeline** that executes modular child pipelines in sequence:
 
 ```mermaid
 flowchart TD
-    M[pl_orchestrate_nyctaxi<br/>🎯 Master Orchestrator] --> P1[pl_stg_lookup<br/>Lookup & Reference Data]
+    M[pl_orchestrate_nyctaxi<br/>Master Orchestrator] --> P1[pl_stg_lookup<br/>Lookup & Reference Data]
     M --> P2[pl_stg_process_nyctaxi<br/>Staging Ingestion]
     M --> P3[pl_pres_processing_nyctaxi<br/>Presentation Processing]
     P3 --> DF[df_pres_processing_nyctaxi<br/>Dataflow Gen2 Transformations]
@@ -68,31 +60,31 @@ flowchart TD
 
 ---
 
-## 🥉🥈🥇 Medallion Architecture
+## Medallion Architecture
 
 ```mermaid
 flowchart LR
-    B[🥉 Bronze<br/>Raw trip records<br/>ProjectLakehouse] --> S[🥈 Silver<br/>Cleaned & validated<br/>Dataflow Gen2]
-    S --> G[🥇 Gold<br/>Dimensional tables<br/>ProjectWarehouse]
+    B[Bronze<br/>Raw trip records<br/>ProjectLakehouse] --> S[Silver<br/>Cleaned & validated<br/>Dataflow Gen2]
+    S --> G[Gold<br/>Analytics-ready table<br/>ProjectWarehouse]
 ```
 
 | Layer | Store | Purpose |
 |---|---|---|
 | **Bronze** | `ProjectLakehouse` | Immutable raw source data — preserves full fidelity for auditing and reprocessing |
 | **Silver** | Dataflow Gen2 output | Standardized types, null handling, deduplication, validated records |
-| **Gold** | `ProjectWarehouse` | Analytics-ready dimensional tables optimized for reporting |
+| **Gold** | `ProjectWarehouse` | Analytics-ready table (`dbo.nyctaxi_yellow`) optimized for reporting |
 
 ---
 
-## 📊 Semantic Model & Dashboard
+## Semantic Model & Dashboard
 
 The **`nyctaxi_yellow`** semantic model sits between the warehouse and reporting layer, providing:
 
-- **Relationships** across fact and dimension tables (star schema)
-- **Reusable DAX measures** — revenue, trip counts, averages, tip ratios
+- **Single analytics-ready table** — lookups (vendor, borough, payment) resolved upstream in Dataflow Gen2
+- **Reusable DAX measures** — revenue, trips, passengers, per-trip averages
 - **Business-friendly naming** so analysts self-serve without knowing table internals
 
-> ℹ️ *Note: the semantic model was published through Power BI due to Fabric Trial capacity limitations — the modeling approach is identical to a Fabric-native deployment.*
+> **Note:** the semantic model was published through Power BI due to Fabric Trial capacity limitations. The modeling approach is identical to a Fabric-native deployment.
 
 ### Dashboard Coverage
 
@@ -110,7 +102,7 @@ The Power BI report answers the questions operators actually ask:
 
 ---
 
-## 🗂️ Dataset
+## Dataset
 
 **NYC Yellow Taxi Trip Records** — millions of trip-level records including:
 
@@ -118,7 +110,7 @@ The Power BI report answers the questions operators actually ask:
 
 ---
 
-## 🧰 Technology Stack
+## Technology Stack
 
 | Layer | Technology |
 |---|---|
@@ -126,23 +118,24 @@ The Power BI report answers the questions operators actually ask:
 | Orchestration | Fabric Data Pipelines |
 | Transformation | Dataflow Gen2 |
 | Storage | Lakehouse (Bronze/Silver), SQL Warehouse (Gold) |
-| Modeling | Semantic Model (star schema, DAX) |
+| Modeling | Semantic Model (DAX) |
 | Reporting | Power BI |
 | Version Control | Git / GitHub |
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 | Document | What it covers |
 |---|---|
 | [Pipeline Architecture](docs/pipeline-architecture.md) | Orchestration design, pipeline catalog, failure & rerun strategy, design principles |
-| [Semantic Model](docs/semantic-model.md) | Star schema design, DAX measures, modeling decisions |
+| [Semantic Model](docs/semantic-model.md) | Single-table model design, DAX measures, modeling trade-offs |
+| [Data Dictionary](docs/data-dictionary.md) | Column-level definitions, lineage, and data quality notes for the warehouse table |
 | [Analytical Queries](sql/analytical-queries.sql) | T-SQL queries answering each business question against the warehouse |
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 microsoft-fabric-nyc-taxi-analytics/
@@ -152,7 +145,8 @@ microsoft-fabric-nyc-taxi-analytics/
 │   └── screenshots/                 # Fabric workspace, pipelines, dashboard
 ├── docs/
 │   ├── pipeline-architecture.md     # Orchestration deep-dive
-│   └── semantic-model.md            # Star schema & DAX measures
+│   ├── semantic-model.md            # Model design & DAX measures
+│   └── data-dictionary.md           # Column definitions & lineage
 ├── sql/
 │   └── analytical-queries.sql       # Business-question queries
 ├── powerbi/                         # Report file / model documentation
@@ -163,7 +157,7 @@ microsoft-fabric-nyc-taxi-analytics/
 
 ---
 
-## 🧗 Challenges & Engineering Decisions
+## Challenges & Engineering Decisions
 
 - **Large dataset volumes** — handled via staged ingestion into the Lakehouse before transformation, rather than transforming in-flight
 - **Data quality** — Dataflow Gen2 enforces type safety, null handling, and validation before data reaches the warehouse
@@ -172,14 +166,15 @@ microsoft-fabric-nyc-taxi-analytics/
 
 ---
 
-## 🎓 Skills Demonstrated
+## Skills Demonstrated
 
-**Analytics Engineering** · **Data Engineering** · **Microsoft Fabric** · **Pipeline Orchestration** · **Medallion Architecture** · **Data Warehousing** · **Dimensional Modeling** · **Semantic Modeling (DAX)** · **SQL** · **Power BI** · **Technical Documentation**
+**Analytics Engineering** · **Data Engineering** · **Microsoft Fabric** · **Pipeline Orchestration** · **Medallion Architecture** · **Data Warehousing** · **Data Modeling** · **Semantic Modeling (DAX)** · **SQL** · **Power BI** · **Technical Documentation**
 
 ---
 
-## 🚀 Roadmap
+## Roadmap
 
+- [ ] Evolve the Gold layer to a dimensional star schema as additional fact tables (e.g., green taxi) are onboarded
 - [ ] Incremental refresh for large-scale ingestion
 - [ ] Parameterized pipelines for multi-dataset reuse
 - [ ] Deployment pipelines & CI/CD (Dev → Test → Prod)
@@ -189,7 +184,7 @@ microsoft-fabric-nyc-taxi-analytics/
 
 ---
 
-## 👤 Author
+## Author
 
 **Erwin Glenn Capitan II**
 Analytics Engineer · Business Intelligence Analyst · Data Engineer
