@@ -127,6 +127,24 @@ The Power BI report answers the questions operators actually ask:
 
 ---
 
+## Platform Walkthrough
+
+**The metadata-driven staging pipeline** — a script activity reads the watermark from `metadata.processing_log`, derives the next month, copies that file from the Lakehouse, cleanses outlier dates, and logs the run:
+
+![Staging pipeline](assets/screenshots/04-pipeline-staging-metadata-driven.png)
+
+**The run history** — five incremental loads, one per month, with watermarks advancing and the presentation table accumulating full history:
+
+![Processing log run history](assets/screenshots/08-processing-log-run-history.png)
+
+**The report** — KPIs, daily revenue by payment method, and the most frequent borough-to-borough journeys:
+
+![NYC Yellow Taxi Report](assets/screenshots/11-power-bi-report.png)
+
+All twelve captures — workspace, Lakehouse, each pipeline, the Dataflow, warehouse schemas, semantic model, and lineage view — are in [`assets/screenshots/`](assets/screenshots/).
+
+---
+
 ## Documentation
 
 | Document | What it covers |
@@ -145,7 +163,7 @@ microsoft-fabric-nyc-taxi-analytics/
 ├── README.md
 ├── assets/
 │   ├── diagrams/                    # Architecture & orchestration diagrams
-│   └── screenshots/                 # Fabric workspace, pipelines, dashboard
+│   └── screenshots/                 # 12 captures — workspace, pipelines, warehouse, model, report
 ├── docs/
 │   ├── pipeline-architecture.md     # Orchestration deep-dive
 │   ├── semantic-model.md            # Model design & DAX measures
