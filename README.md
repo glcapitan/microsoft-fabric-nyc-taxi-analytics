@@ -170,8 +170,6 @@ microsoft-fabric-nyc-taxi-analytics/
 │   └── data-dictionary.md           # Column definitions & lineage
 ├── sql/
 │   └── analytical-queries.sql       # Business-question queries
-├── powerbi/                         # Report file / model documentation
-├── sample-data/                     # Small representative data samples
 ├── LICENSE
 └── .gitignore
 ```
