@@ -15,7 +15,7 @@ A city transportation authority needs reliable, self-service analytics on taxi o
 
 This project addresses that with a governed, automated pipeline: raw NYC Yellow Taxi trip records are ingested, cleansed, and landed in an analytics-ready warehouse that feeds an interactive Power BI report. The whole refresh runs through orchestrated Fabric pipelines.
 
-**At a glance:** parquet files land in a Lakehouse → metadata-driven pipelines load a warehouse staging schema one month at a time → T-SQL stored procedures transform and append to a historical presentation table → semantic model → Power BI. Incremental, auditable, single Fabric workspace.
+**At a glance:** parquet files land in a Lakehouse → metadata-driven pipelines load a warehouse staging schema one month at a time → T-SQL stored procedures transform and append to a historical presentation table → semantic model → Power BI. Incremental, auditable, built entirely within Microsoft Fabric.
 
 ---
 
@@ -87,7 +87,7 @@ The **`nyctaxi_yellow`** semantic model sits between the warehouse and reporting
 - **Reusable DAX measures** — revenue, trips, passengers, per-trip averages
 - **Business-friendly naming** so analysts self-serve without knowing table internals
 
-> **Note:** the semantic model was published through Power BI due to Fabric Trial capacity limitations. The modeling approach is identical to a Fabric-native deployment.
+> **Note:** due to My workspace / trial publishing limitations, the semantic model lives in a dedicated reporting workspace and sources a snapshot of `ProjectWarehouse`. The modeling approach is identical to binding directly against the primary warehouse — see [Semantic Model](docs/semantic-model.md) for details.
 
 ### Dashboard Coverage
 
@@ -133,7 +133,7 @@ The Power BI report answers the questions operators actually ask:
 
 ![Staging pipeline](assets/screenshots/04-pipeline-staging-metadata-driven.png)
 
-**The run history** — five incremental loads, one per month, with watermarks advancing and the presentation table accumulating full history:
+**The run history** — one incremental load per month, watermarks advancing, the presentation table accumulating full history:
 
 ![Processing log run history](assets/screenshots/08-processing-log-run-history.png)
 
@@ -141,7 +141,7 @@ The Power BI report answers the questions operators actually ask:
 
 ![NYC Yellow Taxi Report](assets/screenshots/11-power-bi-report.png)
 
-All twelve captures — workspace, Lakehouse, each pipeline, the Dataflow, warehouse schemas, semantic model, and lineage view — are in [`assets/screenshots/`](assets/screenshots/).
+All fourteen captures — workspace, Lakehouse, each pipeline (including the reporting-warehouse sync pipeline), the Dataflow, warehouse schemas, semantic model, and both lineage views — are in [`assets/screenshots/`](assets/screenshots/).
 
 ---
 
@@ -163,7 +163,7 @@ microsoft-fabric-nyc-taxi-analytics/
 ├── README.md
 ├── assets/
 │   ├── diagrams/                    # Architecture & orchestration diagrams
-│   └── screenshots/                 # 12 captures — workspace, pipelines, warehouse, model, report
+│   └── screenshots/                 # 14 captures — workspace, pipelines, warehouse, model, report
 ├── docs/
 │   ├── pipeline-architecture.md     # Orchestration deep-dive
 │   ├── semantic-model.md            # Model design & DAX measures
@@ -183,7 +183,7 @@ microsoft-fabric-nyc-taxi-analytics/
 - **Large dataset volumes** — handled via staged ingestion into the Lakehouse before transformation, rather than transforming in-flight
 - **Data quality** — Dataflow Gen2 enforces type safety, null handling, and validation before data reaches the warehouse
 - **Orchestration complexity** — solved with a master/child pipeline pattern instead of a single monolithic pipeline
-- **Fabric Trial limitations** — worked around semantic model publishing constraints via Power BI while preserving the intended architecture
+- **Workspace publishing limitations** — Fabric's My workspace (trial) restricts semantic model publishing, so the reporting layer (warehouse snapshot → semantic model → report) was stood up in a dedicated reporting workspace — accidentally arriving at the common enterprise pattern of separate data and reporting workspaces
 
 ---
 
